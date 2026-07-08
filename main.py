@@ -39,6 +39,11 @@ class Prompt(BaseModel):
     prompt: str
 
 
+class BookInfo(BaseModel):
+    title: str
+    author: str
+
+
 def prompt_response_format() -> dict[str, Any]:
     return {
         "type": "text",
@@ -47,9 +52,17 @@ def prompt_response_format() -> dict[str, Any]:
     }
 
 
+def book_info_response_format() -> dict[str, Any]:
+    return {
+        "type": "text",
+        "mime_type": "application/json",
+        "schema": BookInfo.model_json_schema(),
+    }
+
+
 @dataclass
 class Settings:
-    book_url: str = "https://www.gutenberg.org/cache/epub/730/pg730.txt"
+    book_url: str = "https://www.gutenberg.org/cache/epub/113/pg113.txt"
     book_path: Path = field(default_factory=lambda: Path("data/book.txt"))
     output_dir: Path = field(default_factory=lambda: Path("data"))
     style: str = "comic book"
@@ -106,22 +119,31 @@ def upload_book(client: genai.Client, book_path: Path) -> Any:
 
 def create_book_interaction(
     client: genai.Client, book_uri: str, service_tier: str
-) -> Any:
+) -> tuple[BookInfo, Any]:
     logger.info("Creating initial book interaction")
-    return client.interactions.create(
+    interaction = client.interactions.create(
         model=GEMINI_MODEL_ID,
         input=[
             {
                 "type": "text",
                 "text": (
                     "Here's a book, to illustrate using Nano Banana. "
-                    "Don't say anything for now, instructions will follow."
+                    "Extract only the book's title and author from the document. "
+                    "Do not add any other commentary."
                 ),
             },
             {"type": "document", "uri": book_uri},
         ],
+        response_format=book_info_response_format(),
         service_tier=service_tier,
     )
+    raw_text = interaction.output_text
+    if not raw_text and interaction.steps:
+        raw_text = interaction.steps[-1].content[0].text
+
+    book_info = BookInfo.model_validate(json.loads(raw_text))
+    logger.info("Book identified: %s by %s", book_info.title, book_info.author)
+    return book_info, interaction
 
 
 def define_art_style(
@@ -150,8 +172,8 @@ def define_art_style(
             model=GEMINI_MODEL_ID,
             input=(
                 "Can you define a art style that would fit the story but with "
-                "a twist? Just give us the prompt for the art syle that will "
-                "added to the furture prompts."
+                "a twist? Just give us the prompt for the art style that will "
+                "added to the future prompts."
             ),
             previous_interaction_id=book_interaction_id,
             service_tier=service_tier,
@@ -218,6 +240,7 @@ def generate_character_images(
     client: genai.Client,
     characters: list[Prompt],
     style: str,
+    book_info: BookInfo,
     output_dir: Path,
     max_images: int,
     service_tier: str,
@@ -227,7 +250,7 @@ def generate_character_images(
         model=IMAGE_MODEL_ID,
         input=(
             "You are going to generate portrait images to illustrate "
-            "The Wind in the Willows from Kenneth Grahame. "
+            f"{book_info.title} from {book_info.author}. "
             f"The style we want you to follow is: {style} "
             f"Also follow those rules: {SYSTEM_INSTRUCTIONS}"
         ),
@@ -385,7 +408,7 @@ def run_pipeline(settings: Settings) -> None:
     download_book(settings.book_url, settings.book_path)
     uploaded_book = upload_book(client, settings.book_path)
 
-    book_interaction = create_book_interaction(
+    book_info, book_interaction = create_book_interaction(
         client, uploaded_book.uri, settings.service_tier
     )
 
@@ -401,6 +424,7 @@ def run_pipeline(settings: Settings) -> None:
         client,
         characters,
         style,
+        book_info,
         settings.output_dir,
         settings.max_character_images,
         settings.service_tier,
