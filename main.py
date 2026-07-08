@@ -22,9 +22,9 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-IMAGE_MODEL_ID = "gemini-2.5-flash-image"
-GEMINI_MODEL_ID = "gemini-3.5-flash"
-VEO_MODEL_ID = "veo-3.1-lite-generate-preview"
+IMAGE_MODEL_ID = "gemini-2.5-flash-image"  # Options are: "gemini-2.5-flash-image", "gemini-3.1-flash-image-preview" or "gemini-3-pro-image-preview"
+GEMINI_MODEL_ID = "gemini-3.5-flash" # Options are: "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash" or "gemini-3.1-pro-preview"
+VEO_MODEL_ID = "veo-3.1-lite-generate-preview" # Options are "veo-3.1-lite-generate-preview", "veo-3.1-fast-generate-preview" or "veo-3.1-generate-preview"
 
 SYSTEM_INSTRUCTIONS = """
   There must be no text on the image, it should not look like a cover page.
@@ -53,7 +53,7 @@ class Settings:
     book_path: Path = field(default_factory=lambda: Path("book.txt"))
     output_dir: Path = field(default_factory=Path.cwd)
     style: str = "comic book"
-    service_tier: str = "flex"
+    service_tier: str = "standard" # "flex", "standard" or "priority"
     max_character_images: int = 5
     max_chapter_images: int = 3
     chapter_index_to_animate: int = 0
@@ -210,7 +210,7 @@ def extract_image_from_interaction(interaction: Any) -> Any | None:
 
 def save_interaction_image(image_content: Any, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(image_content.data)
+    path.write_bytes(base64.b64decode(image_content.data))
     logger.info("Image saved to %s", path)
 
 
