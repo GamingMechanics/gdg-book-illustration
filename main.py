@@ -50,8 +50,8 @@ def prompt_response_format() -> dict[str, Any]:
 @dataclass
 class Settings:
     book_url: str = "https://www.gutenberg.org/cache/epub/730/pg730.txt"
-    book_path: Path = field(default_factory=lambda: Path("book.txt"))
-    output_dir: Path = field(default_factory=Path.cwd)
+    book_path: Path = field(default_factory=lambda: Path("data/book.txt"))
+    output_dir: Path = field(default_factory=lambda: Path("data"))
     style: str = "comic book"
     service_tier: str = "standard" # "flex", "standard" or "priority"
     max_character_images: int = 5
