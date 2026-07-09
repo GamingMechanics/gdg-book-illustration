@@ -8,7 +8,7 @@ import logging
 import os
 import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -86,7 +86,7 @@ def chapter_response_format() -> dict[str, Any]:
 
 @dataclass
 class Settings:
-    book_url: str = "https://www.gutenberg.org/cache/epub/113/pg113.txt"
+    book_url: str = "https://www.gutenberg.org/cache/epub/113/pg113.txt" # default book from Project Gutenberg, The Secret Garden
     book_path: Path = field(default_factory=lambda: Path("data/book.txt"))
     output_dir: Path = field(default_factory=lambda: Path("data"))
     style: str = "graphic noir, dark graphic novels"
@@ -740,9 +740,26 @@ def run_pipeline(settings: Settings) -> None:
     )
 
 
+def prompt_settings(defaults: Settings | None = None) -> Settings:
+    settings = defaults or Settings()
+
+    book_url_input = input(
+        f"Book URL [{settings.book_url}]: "
+    ).strip()
+    style_input = input(
+        f"Art style [{settings.style}]: "
+    ).strip()
+
+    return replace(
+        settings,
+        book_url=book_url_input or settings.book_url,
+        style=style_input or settings.style,
+    )
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    run_pipeline(Settings())
+    run_pipeline(prompt_settings())
 
 
 if __name__ == "__main__":
