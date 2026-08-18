@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import base64
 import json
 import logging
@@ -95,6 +96,8 @@ class Settings:
     max_chapter_images: int = 3
     chapter_index_to_animate: int = 0
     animate_chapters: bool = True
+    pause_after_checkpoint: bool = True
+    late_ask_style: bool = False
     google_api_key: str = field(
         default_factory=lambda: os.environ.get("GOOGLE_API_KEY", "")
     )
@@ -146,6 +149,11 @@ def save_checkpoint(output_dir: Path, checkpoint: Checkpoint) -> None:
         json.dumps(checkpoint.model_dump(), indent=2),
         encoding="utf-8",
     )
+
+
+def wait_for_continue(pause: bool) -> None:
+    if pause:
+        input("Press Enter to continue...")
 
 
 def update_checkpoint(output_dir: Path, **fields: Any) -> Checkpoint:
@@ -351,6 +359,7 @@ def generate_character_prompts(
     style_interaction_id: str,
     service_tier: str,
     output_dir: Path,
+    pause_after_checkpoint: bool = True,
 ) -> tuple[list[Prompt], str]:
     characters_path = output_dir / CHARACTERS_FILE
     if characters_path.exists():
@@ -387,6 +396,7 @@ def generate_character_prompts(
         "Characters:\n%s",
         json.dumps([character.model_dump() for character in characters], indent=4),
     )
+    wait_for_continue(pause_after_checkpoint)
     return characters, interaction.id
 
 
@@ -419,6 +429,7 @@ def generate_character_images(
     max_images: int,
     service_tier: str,
     start_interaction_id: str | None = None,
+    pause_after_checkpoint: bool = True,
 ) -> str:
     if all_character_images_exist(output_dir, characters, max_images):
         checkpoint = load_checkpoint(output_dir)
@@ -447,6 +458,7 @@ def generate_character_images(
         )
         interaction_id = interaction.id
         update_checkpoint(output_dir, last_image_interaction_id=interaction_id)
+        wait_for_continue(pause_after_checkpoint)
 
     for character in characters[:max_images]:
         image_path = character_image_path(output_dir, character.name)
@@ -473,6 +485,7 @@ def generate_character_images(
             logger.warning("No image generated for %s", character.name)
 
         update_checkpoint(output_dir, last_image_interaction_id=interaction_id)
+        wait_for_continue(pause_after_checkpoint)
 
     logger.info("Character image generation completed")
     return interaction_id
@@ -653,9 +666,15 @@ def run_pipeline(settings: Settings) -> None:
             )
             save_book_info(output_dir, book_info)
             update_checkpoint(output_dir, book_interaction_id=book_interaction.id)
+            wait_for_continue(settings.pause_after_checkpoint)
             book_interaction_id = book_interaction.id
         else:
             book_interaction_id = checkpoint.book_interaction_id
+
+        if settings.late_ask_style and not (
+            checkpoint.style and checkpoint.style_interaction_id
+        ):
+            settings = replace(settings, style=prompt_art_style(settings.style))
 
         if checkpoint.style and checkpoint.style_interaction_id:
             style = checkpoint.style
@@ -673,6 +692,7 @@ def run_pipeline(settings: Settings) -> None:
                 style=style,
                 style_interaction_id=style_interaction_id,
             )
+            wait_for_continue(settings.pause_after_checkpoint)
     else:
         book_info = load_book_info(output_dir)
         if book_info is None:
@@ -685,6 +705,7 @@ def run_pipeline(settings: Settings) -> None:
         style_interaction_id,
         settings.service_tier,
         output_dir,
+        pause_after_checkpoint=settings.pause_after_checkpoint,
     )
 
     checkpoint = load_checkpoint(output_dir)
@@ -697,6 +718,7 @@ def run_pipeline(settings: Settings) -> None:
         settings.max_character_images,
         settings.service_tier,
         start_interaction_id=checkpoint.last_image_interaction_id,
+        pause_after_checkpoint=settings.pause_after_checkpoint,
     )
 
     chapters = generate_chapter_prompts(
@@ -740,26 +762,56 @@ def run_pipeline(settings: Settings) -> None:
     )
 
 
-def prompt_settings(defaults: Settings | None = None) -> Settings:
+def prompt_art_style(default: str) -> str:
+    style_input = input(f"Art style [{default}]: ").strip()
+    return style_input or default
+
+
+def prompt_settings(
+    defaults: Settings | None = None, *, ask_style: bool = True
+) -> Settings:
     settings = defaults or Settings()
 
     book_url_input = input(
         f"Book URL [{settings.book_url}]: "
     ).strip()
-    style_input = input(
-        f"Art style [{settings.style}]: "
-    ).strip()
+    style = prompt_art_style(settings.style) if ask_style else settings.style
 
     return replace(
         settings,
         book_url=book_url_input or settings.book_url,
-        style=style_input or settings.style,
+        style=style,
     )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Generate character and chapter illustrations for a book."
+    )
+    parser.add_argument(
+        "--no-pause",
+        action="store_true",
+        help="Do not wait for Enter after each checkpoint update.",
+    )
+    parser.add_argument(
+        "--late-ask-style",
+        action="store_true",
+        help="Ask for the art style after book identification instead of at startup.",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    run_pipeline(prompt_settings())
+    args = parse_args()
+    settings = prompt_settings(
+        Settings(
+            pause_after_checkpoint=not args.no_pause,
+            late_ask_style=args.late_ask_style,
+        ),
+        ask_style=not args.late_ask_style,
+    )
+    run_pipeline(settings)
 
 
 if __name__ == "__main__":
