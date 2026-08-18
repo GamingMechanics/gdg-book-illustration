@@ -61,9 +61,26 @@ uv run python main.py
 You will be prompted for:
 
 - **Book URL** — Press Enter to use the default Project Gutenberg link, or paste another plain-text book URL.
-- **Art style** — Press Enter for the default (`graphic noir, dark graphic novels`), or describe your preferred style.
+- **Art style** — Press Enter for the default (`graphic noir, dark graphic novels`), or describe your preferred style. With `--late-ask-style`, this prompt is deferred until after the book has been identified.
+
+After each step that updates `checkpoint.json`, the script waits for you to press Enter before continuing. Use `--no-pause` to skip those stops.
 
 The script logs each step to the terminal. Image and video generation can take several minutes and uses paid API quota.
+
+### Command-line options
+
+| Flag | Description |
+|------|-------------|
+| `--no-pause` | Do not wait for Enter after each checkpoint update. Useful for unattended runs. |
+| `--late-ask-style` | Ask for the art style after book identification instead of at startup, so you can choose a style once the title and author are known. |
+
+Example:
+
+```bash
+uv run python main.py --late-ask-style
+uv run python main.py --no-pause
+uv run python main.py --late-ask-style --no-pause
+```
 
 ### Customising behaviour
 
@@ -79,6 +96,8 @@ Most options live in the `Settings` dataclass at the top of `main.py`. You can c
 | `max_chapter_images` | `3` | Maximum chapter illustrations to generate |
 | `chapter_index_to_animate` | `0` | Which chapter (0-based) to animate |
 | `animate_chapters` | `true` | Set to `false` to skip video generation |
+| `pause_after_checkpoint` | `true` | Wait for Enter after each checkpoint update; `--no-pause` sets this to `false` |
+| `late_ask_style` | `false` | Ask for the art style after book identification; `--late-ask-style` sets this to `true` |
 | `service_tier` | `standard` | API tier: `flex`, `standard`, or `priority` |
 
 Model IDs (`IMAGE_MODEL_ID`, `GEMINI_MODEL_ID`, `VEO_MODEL_ID`) are also defined near the top of `main.py`.
