@@ -458,7 +458,6 @@ def generate_character_images(
         )
         interaction_id = interaction.id
         update_checkpoint(output_dir, last_image_interaction_id=interaction_id)
-        wait_for_continue(pause_after_checkpoint)
 
     for character in characters[:max_images]:
         image_path = character_image_path(output_dir, character.name)
@@ -485,9 +484,9 @@ def generate_character_images(
             logger.warning("No image generated for %s", character.name)
 
         update_checkpoint(output_dir, last_image_interaction_id=interaction_id)
-        wait_for_continue(pause_after_checkpoint)
 
     logger.info("Character image generation completed")
+    wait_for_continue(pause_after_checkpoint)
     return interaction_id
 
 
@@ -534,6 +533,7 @@ def generate_chapter_images(
     characters: list[Prompt],
     output_dir: Path,
     service_tier: str,
+    pause_after_checkpoint: bool,
 ) -> None:
     if all_chapter_images_exist(output_dir, chapters):
         logger.info("All chapter images already exist, skipping generation")
@@ -576,6 +576,7 @@ def generate_chapter_images(
             logger.warning("No image generated for %s", chapter.name)
 
     logger.info("Chapter image generation completed")
+    wait_for_continue(pause_after_checkpoint)
 
 
 def chapter_video_paths(output_dir: Path) -> list[Path]:
@@ -735,6 +736,7 @@ def run_pipeline(settings: Settings) -> None:
         characters,
         output_dir,
         settings.service_tier,
+        pause_after_checkpoint=settings.pause_after_checkpoint,
     )
 
     if not settings.animate_chapters:
