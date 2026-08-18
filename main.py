@@ -23,8 +23,8 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-IMAGE_MODEL_ID = "gemini-2.5-flash-image"  # Options are: "gemini-2.5-flash-image", "gemini-3.1-flash-image-preview" or "gemini-3-pro-image-preview"
-GEMINI_MODEL_ID = "gemini-3.5-flash" # Options are: "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash" or "gemini-3.1-pro-preview"
+IMAGE_MODEL_ID = "gemini-2.5-flash-image"  # Options are: "gemini-3.1-flash-lite-image", "gemini-2.5-flash-image", "gemini-3.1-flash-image" or "gemini-3-pro-image"
+GEMINI_MODEL_ID = "gemini-3.5-flash" # Options are: "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash" or "gemini-3.1-pro-preview"
 VEO_MODEL_ID = "veo-3.1-lite-generate-preview" # Options are "veo-3.1-lite-generate-preview", "veo-3.1-fast-generate-preview" or "veo-3.1-generate-preview"
 
 SYSTEM_INSTRUCTIONS = """
