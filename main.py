@@ -27,6 +27,11 @@ IMAGE_MODEL_ID = "gemini-2.5-flash-image"  # Options are: "gemini-3.1-flash-lite
 GEMINI_MODEL_ID = "gemini-3.5-flash" # Options are: "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash" or "gemini-3.1-pro-preview"
 VEO_MODEL_ID = "veo-3.1-lite-generate-preview" # Options are "veo-3.1-lite-generate-preview", "veo-3.1-fast-generate-preview" or "veo-3.1-generate-preview"
 
+# Better models:
+# IMAGE_MODEL_ID = "gemini-3.1-flash-image"  # Options are: "gemini-3.1-flash-lite-image", "gemini-2.5-flash-image", "gemini-3.1-flash-image" or "gemini-3-pro-image"
+# GEMINI_MODEL_ID = "gemini-3.7-flash" # Options are: "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash" or "gemini-3.1-pro-preview"
+# VEO_MODEL_ID = "veo-3.1-generate-preview" # Options are "veo-3.1-lite-generate-preview", "veo-3.1-fast-generate-preview" or "veo-3.1-generate-preview"
+
 SYSTEM_INSTRUCTIONS = """
   There must be no text on the image, it should not look like a cover page.
   It should be an full illustration with no borders, titles, nor description.
@@ -613,8 +618,29 @@ def animate_chapter(
         time.sleep(poll_interval_seconds)
         operation = client.operations.get(operation)
 
+    if operation.error:
+        raise RuntimeError(f"Video generation failed: {operation.error}")
+
+    result = operation.result or operation.response
+    generated_videos = result.generated_videos if result else None
+    if not generated_videos:
+        reasons = []
+        if result is not None:
+            reasons = result.rai_media_filtered_reasons or []
+            if result.rai_media_filtered_count:
+                reasons = reasons or [
+                    f"{result.rai_media_filtered_count} video(s) filtered by RAI"
+                ]
+        detail = "; ".join(reasons) if reasons else "no videos returned"
+        raise RuntimeError(
+            "Video generation completed but returned no videos "
+            f"({detail}). Veo often filters scenes that depict children "
+            "or other restricted people; try a chapter/image without minors, "
+            "or a book with adult protagonists."
+        )
+
     saved_paths = []
-    for index, generated_video in enumerate(operation.result.generated_videos):
+    for index, generated_video in enumerate(generated_videos):
         client.files.download(file=generated_video.video)
         video_path = output_dir / f"chapter_video_{index}.mp4"
         generated_video.video.save(str(video_path))
