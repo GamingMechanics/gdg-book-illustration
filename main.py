@@ -23,7 +23,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-IMAGE_MODEL_ID = "gemini-2.5-flash-image"  # Options are: "gemini-3.1-flash-lite-image", "gemini-2.5-flash-image", "gemini-3.1-flash-image" or "gemini-3-pro-image"
+IMAGE_MODEL_ID = "gemini-3.1-flash-lite-image"  # Options are: "gemini-3.1-flash-lite-image", "gemini-2.5-flash-image", "gemini-3.1-flash-image" or "gemini-3-pro-image"
 GEMINI_MODEL_ID = "gemini-3.5-flash" # Options are: "gemini-2.5-flash", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash" or "gemini-3.1-pro-preview"
 VEO_MODEL_ID = "veo-3.1-lite-generate-preview" # Options are "veo-3.1-lite-generate-preview", "veo-3.1-fast-generate-preview" or "veo-3.1-generate-preview"
 
@@ -386,7 +386,8 @@ def generate_character_prompts(
             "Can you describe the main characters and prepare a prompt describing "
             "them with as much details as possible (use the descriptions from the "
             "book) so Nano Banana can generate images of them? Each prompt should "
-            "be at least 50 words."
+            "be at least 50 words. Ground the prompt with the guides and strategies "
+            "in this documentation: https://aistudio.google.com/docs/image-generation#prompt-guide"
         ),
         previous_interaction_id=style_interaction_id,
         response_format=prompt_response_format(),
@@ -517,7 +518,8 @@ def generate_chapter_prompts(
             "page. Be very descriptive, especially of the characters. Be very "
             "descriptive and remember to tell their name and to reuse the character "
             "prompts if they appear in the images. Also list all characters who "
-            "appear in it. Each prompt should be at least 100 words but no more than 200 words."
+            "appear in it. Each prompt should be at least 70 words but no more than 150 words."
+            "Ground the prompt with the guides and strategies in this documentation: https://aistudio.google.com/docs/image-generation#prompt-guide"
         ),
         previous_interaction_id=characters_interaction_id,
         response_format=chapter_response_format(),
