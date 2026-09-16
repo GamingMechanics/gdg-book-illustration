@@ -25,7 +25,7 @@ Progress is saved under `data/`, so you can stop and resume a run without repeat
 - **[uv](https://docs.astral.sh/uv/)** (recommended) or another way to install dependencies from `pyproject.toml`
 - A **Google AI API key** with access to:
   - Gemini text models (e.g. `gemini-3.5-flash`)
-  - Gemini image generation (e.g. `gemini-2.5-flash-image`)
+  - Gemini image generation (e.g. `gemini-3.1-flash-lite-image`)
   - Veo video generation (e.g. `veo-3.1-lite-generate-preview`)
 
 Create a key in [Google AI Studio](https://aistudio.google.com/apikey).
@@ -122,7 +122,7 @@ To start fresh for a book, delete its output folder (or the relevant JSON/PNG/MP
 ## Models used
 
 - **Text & prompts:** `gemini-3.5-flash` (configurable via `GEMINI_MODEL_ID`)
-- **Images:** `gemini-2.5-flash-image` (configurable via `IMAGE_MODEL_ID`)
+- **Images:** `gemini-3.1-flash-lite-image` (configurable via `IMAGE_MODEL_ID`)
 - **Video:** `veo-3.1-lite-generate-preview` (configurable via `VEO_MODEL_ID`)
 
 Alternative model names are listed in comments next to each constant in `main.py`.
